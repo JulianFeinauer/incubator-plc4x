@@ -19,12 +19,16 @@
 package org.apache.plc4x.java.s7.netty.util;
 
 import org.apache.plc4x.java.api.exceptions.PlcProtocolException;
+import org.aparche.plc4x.java.encoders.Converter;
+import org.aparche.plc4x.java.encoders.Converters;
 
 import java.io.UnsupportedEncodingException;
 import java.util.LinkedList;
 import java.util.List;
 
 public class S7TypeDecoder {
+
+    private static Converter converter = Converters.getDefaultConverter();
 
     private S7TypeDecoder() {
         // Utility class
@@ -37,6 +41,8 @@ public class S7TypeDecoder {
         int i = 0;
         final int length = s7Data.length;
         while (i < length) {
+            // TODO Syntax for increment
+            result.add(converter.decode(datatype, null, s7Data));
             if (datatype == Boolean.class) {
                 result.add((s7Data[i] & 0x01) == 0x01);
                 i += 1;
