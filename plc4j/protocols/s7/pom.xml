@@ -52,7 +52,7 @@
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-core</artifactId>
       <version>0.0.1-SNAPSHOT</version>
-      <scope>runtime</scope>
+      <!--<scope>runtime</scope>-->
     </dependency>
 
     <dependency>

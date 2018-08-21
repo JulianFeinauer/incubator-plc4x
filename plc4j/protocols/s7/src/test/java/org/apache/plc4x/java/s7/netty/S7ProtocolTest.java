@@ -23,12 +23,7 @@ import io.netty.buffer.Unpooled;
 import org.apache.plc4x.java.isotp.netty.model.IsoTPMessage;
 import org.apache.plc4x.java.isotp.netty.model.tpdus.Tpdu;
 import org.apache.plc4x.java.netty.NettyTestBase;
-import org.apache.plc4x.java.s7.netty.model.messages.S7RequestMessage;
-import org.apache.plc4x.java.s7.netty.model.params.VarParameter;
-import org.apache.plc4x.java.s7.netty.model.params.items.S7AnyVarParameterItem;
-import org.apache.plc4x.java.s7.netty.model.payloads.VarPayload;
-import org.apache.plc4x.java.s7.netty.model.payloads.items.VarPayloadItem;
-import org.apache.plc4x.java.s7.netty.model.types.*;
+import org.apache.plc4x.java.s7.netty.model.types.MessageType;
 import org.apache.plc4x.test.FastTests;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +31,6 @@ import org.junit.experimental.categories.Category;
 
 import java.util.LinkedList;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -60,7 +54,7 @@ public class S7ProtocolTest extends NettyTestBase {
             MessageType.ACK,
             (short) 1,
             singletonList(new VarParameter(ParameterType.WRITE_VAR, singletonList(new S7AnyVarParameterItem(
-                SpecificationType.VARIABLE_SPECIFICATION, MemoryArea.DATA_BLOCKS, TransportSize.BIT, (short) 1, (short) 1, (short) 1, (byte) 1
+                SpecificationType.VARIABLE_SPECIFICATION, InternalMemoryArea.DATA_BLOCKS, TransportSize.BIT, (short) 1, (short) 1, (short) 1, (byte) 1
             )))),
             singletonList(new VarPayload(
                 ParameterType.WRITE_VAR,

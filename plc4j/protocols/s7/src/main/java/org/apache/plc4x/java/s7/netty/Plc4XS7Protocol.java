@@ -36,6 +36,7 @@ import org.apache.plc4x.java.base.events.ConnectedEvent;
 import org.apache.plc4x.java.s7.model.S7Address;
 import org.apache.plc4x.java.s7.model.S7BitAddress;
 import org.apache.plc4x.java.s7.model.S7DataBlockAddress;
+import org.apache.plc4x.java.s7.model.TypedS7Address;
 import org.apache.plc4x.java.s7.netty.events.S7ConnectedEvent;
 import org.apache.plc4x.java.s7.netty.model.messages.S7Message;
 import org.apache.plc4x.java.s7.netty.model.messages.S7RequestMessage;
@@ -46,6 +47,7 @@ import org.apache.plc4x.java.s7.netty.model.params.items.VarParameterItem;
 import org.apache.plc4x.java.s7.netty.model.payloads.VarPayload;
 import org.apache.plc4x.java.s7.netty.model.payloads.items.VarPayloadItem;
 import org.apache.plc4x.java.s7.netty.model.types.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.*;
@@ -198,9 +200,12 @@ public class Plc4XS7Protocol extends PlcMessageToMessageCodec<S7Message, PlcRequ
         for (ReadRequestItem requestItem : readRequest.getRequestItems()) {
             // Try to get the correct S7 transport size for the given data type.
             // (Map PLC4X data type to S7 data type)
-            TransportSize transportSize = encodeTransportSize(requestItem.getDatatype());
-            if (transportSize == null) {
-                throw new PlcException("Unknown transport size for datatype " + requestItem.getDatatype());
+            TransportSize transportSize;
+            if (requestItem.getAddress() instanceof TypedS7Address) {
+                transportSize = encodeTransportSize((TypedS7Address) requestItem.getAddress());
+            } else {
+                // TODO remove this branch
+                transportSize = encodeTransportSize(requestItem.getDatatype());
             }
 
             // Depending on the address type, generate the corresponding type of request item.
@@ -211,31 +216,39 @@ public class Plc4XS7Protocol extends PlcMessageToMessageCodec<S7Message, PlcRequ
 
     private VarParameterItem encodeVarParameterItem(Address address, TransportSize transportSize, int size) throws PlcProtocolException {
         // Depending on the address type, generate the corresponding type of request item.
-        if (!(address instanceof S7Address)) {
-            throw new PlcProtocolException("Can only use S7Address types on S7 connection");
-        }
-        S7Address s7Address = (S7Address) address;
-        if (s7Address instanceof S7DataBlockAddress) {
-            S7DataBlockAddress s7DataBlockAddress = (S7DataBlockAddress) s7Address;
+        if (address instanceof S7Address) {
+            S7Address s7Address = (S7Address) address;
+            if (s7Address instanceof S7DataBlockAddress) {
+                S7DataBlockAddress s7DataBlockAddress = (S7DataBlockAddress) s7Address;
+                return new S7AnyVarParameterItem(
+                    SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
+                    transportSize, (short) size,
+                    s7DataBlockAddress.getDataBlockNumber(), s7DataBlockAddress.getByteOffset(), (byte) 0);
+            } else if (s7Address instanceof S7BitAddress) {
+                S7BitAddress s7BitAddress = (S7BitAddress) s7Address;
+                return new S7AnyVarParameterItem(
+                    SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
+                    transportSize, (short) size, (short) 0,
+                    s7Address.getByteOffset(), s7BitAddress.getBitOffset());
+            } else {
+                return new S7AnyVarParameterItem(
+                    SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
+                    transportSize, (short) size, (short) 0,
+                    s7Address.getByteOffset(), (byte) 0);
+            }
+        } else if (address instanceof TypedS7Address) {
+            TypedS7Address s7Address = (TypedS7Address) address;
+            // Currently only data block is supported
             return new S7AnyVarParameterItem(
                 SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
                 transportSize, (short) size,
-                s7DataBlockAddress.getDataBlockNumber(), s7DataBlockAddress.getByteOffset(), (byte) 0);
-        } else if (s7Address instanceof S7BitAddress) {
-            S7BitAddress s7BitAddress = (S7BitAddress) s7Address;
-            return new S7AnyVarParameterItem(
-                SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
-                transportSize, (short) size, (short) 0,
-                s7Address.getByteOffset(), s7BitAddress.getBitOffset());
+                s7Address.getBlockId(), s7Address.getByteOffset(), (byte) 0);
         } else {
-            return new S7AnyVarParameterItem(
-                SpecificationType.VARIABLE_SPECIFICATION, s7Address.getMemoryArea(),
-                transportSize, (short) size, (short) 0,
-                s7Address.getByteOffset(), (byte) 0);
+            throw new PlcProtocolException("Can only use S7Address type or TypedS7Address type on S7 connection");
         }
     }
 
-    private TransportSize encodeTransportSize(Class<?> datatype) {
+    private TransportSize encodeTransportSize(Class<?> datatype) throws PlcException {
         if (datatype == Boolean.class) {
             return TransportSize.BIT;
         } else if (datatype == Byte.class) {
@@ -253,7 +266,12 @@ public class Plc4XS7Protocol extends PlcMessageToMessageCodec<S7Message, PlcRequ
         } else if (datatype == String.class) {
             return TransportSize.CHAR;
         }
-        return null;
+        throw new PlcException("Unknown transport size for datatype " + datatype);
+    }
+
+    private TransportSize encodeTransportSize(TypedS7Address address) {
+        // FIXME implement
+        throw new NotImplementedException();
     }
 
     private DataTransportSize encodeDataTransportSize(Class<?> datatype) {
@@ -344,9 +362,17 @@ public class Plc4XS7Protocol extends PlcMessageToMessageCodec<S7Message, PlcRequ
             // All Ok.
             else {
                 byte[] data = payloadItem.getData();
-                Class<?> datatype = requestItem.getDatatype();
-                List<?> value = decodeData(datatype, data);
-                responseItem = new ReadResponseItem(requestItem, responseCode, value);
+                if (requestItem.getAddress() instanceof TypedS7Address) {
+                    // Use Type Information
+                    TypedS7Address address = (TypedS7Address) requestItem.getAddress();
+                    List<?> value = decodeData(address, data);
+                    responseItem = new ReadResponseItem(requestItem, responseCode, value);
+                } else {
+                    // Untyped way
+                    Class<?> datatype = requestItem.getDatatype();
+                    List<?> value = decodeData(datatype, data);
+                    responseItem = new ReadResponseItem(requestItem, responseCode, value);
+                }
             }
             responseItems.add(responseItem);
         }

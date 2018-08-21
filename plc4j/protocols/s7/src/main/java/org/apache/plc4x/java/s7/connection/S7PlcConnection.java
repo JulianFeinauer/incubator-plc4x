@@ -22,7 +22,6 @@ import io.netty.channel.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.plc4x.java.api.connection.PlcReader;
 import org.apache.plc4x.java.api.connection.PlcWriter;
-import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.exceptions.PlcException;
 import org.apache.plc4x.java.api.messages.*;
 import org.apache.plc4x.java.api.model.Address;
@@ -37,12 +36,9 @@ import org.apache.plc4x.java.isotp.netty.model.tpdus.DisconnectRequestTpdu;
 import org.apache.plc4x.java.isotp.netty.model.types.DeviceGroup;
 import org.apache.plc4x.java.isotp.netty.model.types.DisconnectReason;
 import org.apache.plc4x.java.isotp.netty.model.types.TpduSize;
-import org.apache.plc4x.java.s7.model.S7Address;
-import org.apache.plc4x.java.s7.model.S7BitAddress;
-import org.apache.plc4x.java.s7.model.S7DataBlockAddress;
+import org.apache.plc4x.java.s7.model.TypedS7Address;
 import org.apache.plc4x.java.s7.netty.Plc4XS7Protocol;
 import org.apache.plc4x.java.s7.netty.S7Protocol;
-import org.apache.plc4x.java.s7.netty.model.types.MemoryArea;
 import org.apache.plc4x.java.s7.utils.S7TsapIdEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class S7PlcConnection extends AbstractPlcConnection implements PlcReader, PlcWriter {
@@ -196,24 +191,7 @@ public class S7PlcConnection extends AbstractPlcConnection implements PlcReader,
 
     @Override
     public Address parseAddress(String addressString) throws PlcException {
-        Matcher datablockAddressMatcher = S7_DATABLOCK_ADDRESS_PATTERN.matcher(addressString);
-        if (datablockAddressMatcher.matches()) {
-            int datablockNumber = Integer.parseInt(datablockAddressMatcher.group("blockNumber"));
-            int datablockByteOffset = Integer.parseInt(datablockAddressMatcher.group("byteOffset"));
-            return new S7DataBlockAddress((short) datablockNumber, (short) datablockByteOffset);
-        }
-        Matcher addressMatcher = S7_ADDRESS_PATTERN.matcher(addressString);
-        if (!addressMatcher.matches()) {
-            throw new PlcConnectionException(
-                "Address string doesn't match the format '{area}/{offset}[/{bit-offset}]'");
-        }
-        MemoryArea memoryArea = MemoryArea.valueOf(addressMatcher.group("memoryArea"));
-        int byteOffset = Integer.parseInt(addressMatcher.group("byteOffset"));
-        String bitOffset = addressMatcher.group("bitOffset");
-        if (bitOffset != null) {
-            return new S7BitAddress(memoryArea, (short) byteOffset, Byte.valueOf(bitOffset));
-        }
-        return new S7Address(memoryArea, (short) byteOffset);
+        return TypedS7Address.parse(addressString);
     }
 
     @Override
