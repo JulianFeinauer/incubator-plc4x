@@ -20,6 +20,8 @@ package org.apache.plc4x.java.s7.netty.util;
 
 import org.apache.plc4x.java.api.exceptions.PlcProtocolException;
 import org.apache.plc4x.java.api.exceptions.PlcUnsupportedDataTypeException;
+import org.apache.plc4x.java.base.model.TypedAddress;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -31,9 +33,22 @@ public class S7TypeDecoder {
         // Utility class
     }
 
+    public static <T> List<T> decodeData(TypedAddress typedAddress, byte[] s7Data) throws PlcProtocolException {
+        // FIXME Implement this
+        switch (typedAddress.getType()) {
+            case BOOLEAN:
+            case UNSIGNED_INTEGER:
+            case SIGNED_INTEGER:
+            case DECIMAL:
+            case STRING:
+            case DATE:
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> List<T> decodeData(Class<T> datatype, byte[] s7Data) throws PlcProtocolException {
-
         List<Object> result = new LinkedList<>();
         int i = 0;
         final int length = s7Data.length;

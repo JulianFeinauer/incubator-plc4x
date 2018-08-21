@@ -46,6 +46,7 @@ import org.apache.plc4x.java.isotp.netty.model.types.TpduSize;
 import org.apache.plc4x.java.s7.model.S7Address;
 import org.apache.plc4x.java.s7.model.S7BitAddress;
 import org.apache.plc4x.java.s7.model.S7DataBlockAddress;
+import org.apache.plc4x.java.s7.model.TypedS7Address;
 import org.apache.plc4x.java.s7.netty.Plc4XS7Protocol;
 import org.apache.plc4x.java.s7.netty.S7Protocol;
 import org.apache.plc4x.java.s7.netty.model.types.MemoryArea;
@@ -242,16 +243,7 @@ public class S7PlcConnection extends AbstractPlcConnection implements PlcReader,
 
     @Override
     public Address parseAddress(String addressString) throws PlcInvalidAddressException {
-        if(S7DataBlockAddress.matches(addressString)) {
-            return S7DataBlockAddress.of(addressString);
-        }
-        if(S7BitAddress.matches(addressString)) {
-            return S7BitAddress.of(addressString);
-        }
-        if(S7Address.matches(addressString)) {
-            return S7Address.of(addressString);
-        }
-        throw new PlcInvalidAddressException(addressString);
+        return TypedS7Address.parse(addressString);
     }
 
     @Override
