@@ -18,19 +18,15 @@ specific language governing permissions and limitations
 under the License.
 */
 
-import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
+import org.apache.plc4x.java.api.exceptions.PlcInvalidAddressException;
 
 /**
  * Exception that is thrown during parsing of an S7 Address String.
  */
-public class S7ParseException extends PlcConnectionException {
+public class S7ParseException extends PlcInvalidAddressException {
 
     public S7ParseException(String message) {
         super(message);
-    }
-
-    public S7ParseException(String message, Throwable cause) {
-        super(message, cause);
     }
 
 }
