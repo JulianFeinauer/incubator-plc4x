@@ -25,6 +25,9 @@ matrix:
 
 install: true
 
+jdk:
+  - openjdk8
+
 script:
-    - jdk_switcher use oraclejdk8
-    - mvn clean install site:site
+#    - jdk_switcher use oraclejdk8
+    - mvn -q clean install
