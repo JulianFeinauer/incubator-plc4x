@@ -19,6 +19,7 @@
 package org.apache.plc4x.java.spi;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import org.apache.commons.codec.binary.Hex;
@@ -63,6 +64,7 @@ public abstract class GeneratedDriverByteToMessageCodec<T extends Message> exten
         LOGGER.trace("Receiving bytes, trying to decode Message...");
         // As long as there is data available, continue checking the content.
         while(byteBuf.readableBytes() > 0) {
+            // LOGGER.trace(ByteBufUtil.prettyHexDump(byteBuf));
             byte[] bytes = null;
             try {
                 // Check if enough data is present to process the entire package.

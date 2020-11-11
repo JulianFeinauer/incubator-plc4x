@@ -94,6 +94,9 @@ public class S7Driver extends GeneratedDriverBase<TPKTPacket> {
         @Override
         public int applyAsInt(ByteBuf byteBuf) {
             if (byteBuf.readableBytes() >= 4) {
+                if (byteBuf.getUnsignedByte(byteBuf.readerIndex()) != TPKTPacket.PROTOCOLID) {
+                    throw new RuntimeException("This is not the start of a package, I guess!");
+                }
                 return byteBuf.getUnsignedShort(byteBuf.readerIndex() + 2);
             }
             return -1;
@@ -104,9 +107,11 @@ public class S7Driver extends GeneratedDriverBase<TPKTPacket> {
     public static class CorruptPackageCleaner implements Consumer<ByteBuf> {
         @Override
         public void accept(ByteBuf byteBuf) {
-            while (byteBuf.getUnsignedByte(0) != TPKTPacket.PROTOCOLID) {
+            while (byteBuf.getUnsignedByte(byteBuf.readerIndex()) != TPKTPacket.PROTOCOLID) {
                 // Just consume the bytes till the next possible start position.
-                byteBuf.readByte();
+                if (byteBuf.readableBytes() > 0) {
+                    byteBuf.readByte();
+                }
             }
         }
     }
